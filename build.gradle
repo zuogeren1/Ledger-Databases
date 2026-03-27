@@ -3,24 +3,24 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	id 'fabric-loom' version '1.12.7'
+	id 'net.fabricmc.fabric-loom' version '1.15-SNAPSHOT'
 	id 'maven-publish'
-	id 'org.jetbrains.kotlin.jvm' version "2.2.21"
+	id 'org.jetbrains.kotlin.jvm' version "2.1.21"
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 base {
-    archivesName = project.archives_base_name
+	archivesName = project.archives_base_name
 }
 version = project.mod_version
 group = project.maven_group
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 	mavenLocal()
 	maven {
 		url = "https://maven.nucleoid.xyz"
@@ -28,34 +28,40 @@ repositories {
 	maven {
 		url = "https://oss.sonatype.org/content/repositories/snapshots"
 	}
+	maven { url = "https://jitpack.io" }
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	// mappings 完全删除，26.1 无混淆不需要
 
-	// Yes this has to be capitalised
-	modImplementation "com.github.quiltservertools:Ledger:1.3.0+local"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	modImplementation "net.fabricmc:fabric-language-kotlin:1.9.4+kotlin.1.8.21"
+	// Ledger — 本地 maven 版本
+	implementation "com.github.quiltservertools:Ledger:1.3.19+local"
 
-	implementation(include("com.zaxxer:HikariCP:5.0.1"))
+	implementation "net.fabricmc:fabric-language-kotlin:1.13.10+kotlin.2.3.20"
+
+	implementation(include("com.zaxxer:HikariCP:5.1.0"))
+
+	// SQLite
+	implementation(include("org.xerial:sqlite-jdbc:3.47.1.0"))
 
 	// H2
 	implementation(include("com.h2database:h2:2.2.224"))
 
 	// MySQL
-	implementation(include('com.mysql:mysql-connector-j:8.3.0'))
+	implementation(include('com.mysql:mysql-connector-j:9.2.0'))
 
 	// MariaDB
-	implementation(include('org.mariadb.jdbc:mariadb-java-client:3.3.3'))
+	implementation(include('org.mariadb.jdbc:mariadb-java-client:3.5.2'))
 
 	// PostgreSQL
-	implementation(include("org.postgresql:postgresql:42.7.3"))
+	implementation(include("org.postgresql:postgresql:42.7.5"))
 
-    modImplementation("me.lucko:fabric-permissions-api:0.3")
+	implementation("me.lucko:fabric-permissions-api:0.3")
+
+	implementation("com.uchuhimo:konf-core:0.22.1")
 }
 
 processResources {
@@ -68,43 +74,36 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-
-	it.options.release = 17
+	it.options.release = 25
 }
 
 tasks.withType(KotlinCompile).configureEach {
-    it.compilerOptions.languageVersion = KotlinVersion.KOTLIN_1_8
-    it.compilerOptions.apiVersion = KotlinVersion.KOTLIN_1_8
-    it.compilerOptions.jvmTarget = JvmTarget.JVM_17
+	it.compilerOptions.languageVersion = KotlinVersion.KOTLIN_2_1
+	it.compilerOptions.apiVersion = KotlinVersion.KOTLIN_2_1
+	it.compilerOptions.jvmTarget = JvmTarget.JVM_21
 }
 
 java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 }
 
 jar {
 	from("LICENSE") {
-		rename { "${it}_${project.archives_base_name}"}
+		rename { "${it}_${project.archives_base_name}" }
 	}
 }
 
-// configure the maven publication
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			// add all the jars that should be included when publishing to maven
-			artifact(remapJar) {
-				builtBy remapJar
+			artifact(jar) {
+				builtBy jar
 			}
 			artifact(sourcesJar) {
-				builtBy remapSourcesJar
+				builtBy sourcesJar
 			}
 		}
 	}
-
 	repositories {
 	}
 }
